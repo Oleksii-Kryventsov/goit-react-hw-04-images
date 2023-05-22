@@ -1,33 +1,29 @@
-import { Component } from "react";
+import { useState } from "react";
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import PropTypes from 'prop-types';
 import { Form, FormBtn, Header, BtnLabel, Input } from "./Search.styled";
 
-export class Search extends Component {
-    state = {
-        searchQuery: '',
+export const Search = ({onSubmit}) => {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSearchChange = (event) => {
+        setSearchQuery(event.currentTarget.value.toLowerCase());
     };
 
-    handleSearchChange = event => {
-        this.setState({ searchQuery: event.currentTarget.value.toLowerCase() });
-    } 
-
-    handleSubmit = event => {
+    const handleSubmit = event => {
         event.preventDefault();
 
-        if (this.state.searchQuery.trim() === '') {
+        if (searchQuery.trim() === '') {
             Notify.failure('Error');
             return;
         };
 
-        this.props.onSubmit(this.state.searchQuery);
-        this.setState({ searchQuery: '' });
-    }
-
-    render() {
+        onSubmit(searchQuery);
+        setSearchQuery('');
+    };
         return (
             <Header>
-                <Form onSubmit={this.handleSubmit}>
+                <Form onSubmit={handleSubmit}>
                     <FormBtn type="submit">
                         <BtnLabel>Search</BtnLabel>
                     </FormBtn>
@@ -36,15 +32,14 @@ export class Search extends Component {
                         autocomplete="off"
                         autoFocus
                         placeholder="Search images and photos"
-                        value={this.state.searchQuery}
-                        onChange={this.handleSearchChange}
+                        value={searchQuery}
+                        onChange={handleSearchChange}
                     />
                 </Form>
             </Header>
         )
-    }
 };
-
+    
 Search.propTypes = {
     onsubmit: PropTypes.func
 };

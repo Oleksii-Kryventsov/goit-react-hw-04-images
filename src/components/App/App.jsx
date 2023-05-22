@@ -1,27 +1,20 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import { AppContainer } from './App.styled';
 import { ImageGallery } from 'components/ImageGallery';
 import { Search } from 'components/Search';
 
 
 
-export class App extends Component {
-    state = {
-        searchQuery: '',
-    };
+export const App = () => {
+  const [searchQuery, setSearchQuery] = useState('');
 
-    handleFormSubmit = searchQuery => {
-    this.setState({ searchQuery })
-  };
 
-    render() {
     return (
     <AppContainer>
-        <Search onSubmit={this.handleFormSubmit}/>
-            <ImageGallery searchQuery={this.state.searchQuery} />
+        <Search onSubmit={setSearchQuery}/>
+            <ImageGallery searchQuery={searchQuery} />
     </AppContainer>
   );
-  }
 };
 
 

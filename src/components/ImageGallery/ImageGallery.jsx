@@ -1,70 +1,75 @@
-import { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { ImageItem } from 'components/ImageItem';
 import { Loader } from 'components/Loader';
 import { Modal } from 'components/Modal';
 import { Button } from 'components/Button';
 import { fetchImg } from 'services/fetch';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { GalleryContainer, ImageGalleryList } from 'components/ImageGallery/ImageGallery.styled';
 import PropTypes from 'prop-types';
 
-export class ImageGallery extends Component {
-    state = {
-        response: '',
-        error: null,
-        status: null,
-        showModal: false,
-        modalImg: '',
-        alt: '',
-        page: 1,
-    }
+export const ImageGallery = ({ searchQuery }) => {
 
-    componentDidUpdate(prevProps, prevState) {
-        const prevSearchQuery = prevProps.searchQuery;
-        const nextSearchQuery = this.props.searchQuery;
+    const [response, setResponse] = useState('');
+    const [error, setError] = useState(null);
+    const [status, setStatus] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [modalImg, setModalImg] = useState('');
+    const [alt, setAlt] = useState('');
+    const [page, setPage] = useState(1);
 
-        if (prevSearchQuery !== nextSearchQuery) {
-            
-            this.setState({ status: 'pending' });
-            
-            fetchImg(nextSearchQuery, 1)
-                .then(response => this.setState(prevState => {
-                    return {
-                        response: response.hits,
-                        status: 'resolved',
-                        page: prevState.page +1, 
-                    }
-                }))
-                .catch(error => this.setState({ error, status: 'rejected' }));
+    useEffect(() => {
+
+        if (searchQuery === '') {
+            return
         };
-    };
 
-    toggleModal = () => {
-        this.setState(state => ({
-            showModal: !state.showModal,
-        })); 
-    };
+        setStatus('pending');
 
-    getModalImg = (modalImg, alt) => {
-        this.setState({
-            modalImg,
-            alt,
-        })
-    };
+        fetchImg(searchQuery, 1)
+            .then(response => {
 
-    loadMore = () => {
-            fetchImg(this.props.searchQuery, this.state.page)
-            .then(nextResponse => this.setState(prevState => {
-                return {
-                    response: [...prevState.response, ...nextResponse.hits],
-                    page: prevState.page + 1,
+                if (response.total === 0) {
+                    Notify.warning('Nothing was found for your request');
+                    setStatus(null);
+                    return
                 }
-            })  
-            )
-            .catch(error => this.setState({ error, status: 'rejected' }));
+                setResponse(response.hits);
+                setStatus('resolved');
+                setPage(state => state + 1);
+                })
+            .catch(error => {
+                setError(error);
+                setStatus('rejected')
+                });
+
+    },[searchQuery]);
+
+    const toggleModal = () => {
+        setShowModal(!showModal); 
     };
 
-    render() {
-        const { response, error, status } = this.state;
+    const getModalImg = (modalImg, alt) => {
+        setModalImg(modalImg);
+        setAlt(alt);
+    };
+
+
+    const loadMore = () => {
+        
+        fetchImg(searchQuery, page)
+            .then(nextResponse => {
+                console.log('old', response);
+                console.log('new', nextResponse.hits);
+                setResponse([...response, ...nextResponse.hits]);
+                setPage(state => state + 1);
+            })
+            .catch(error => {
+                setError(error);
+                setStatus('rejected')
+                });
+    };
+
 
         if (status === 'pending') {
             return  <GalleryContainer>
@@ -81,8 +86,8 @@ export class ImageGallery extends Component {
                         <ImageGalleryList>
                             {response.map(pix =>
                                 <ImageItem
-                                    onGetModalImg={this.getModalImg}
-                                    toggleModal={this.toggleModal}
+                                    onGetModalImg={getModalImg}
+                                    toggleModal={toggleModal}
                                     key={pix.id}
                                     pix={pix}
                                 />
@@ -90,20 +95,20 @@ export class ImageGallery extends Component {
                         </ImageGalleryList>
                 
                         <GalleryContainer>       
-                        <Button onClick={this.loadMore}>Load more</Button>
+                        <Button onClick={loadMore}>Load more</Button>
                         </GalleryContainer>
                 
-                        {this.state.showModal &&
+                        {showModal &&
                             <Modal
-                                onClose={this.toggleModal}>
+                                onClose={toggleModal}>
                                     <img
-                                        src={this.state.modalImg}
-                                        alt={this.state.alt}
+                                        src={modalImg}
+                                        alt={alt}
                                     />
                             </Modal>}
                     </div>
-        };
-};
+    };
+
 
 ImageGallery.propTypes = {
     searchQuery: PropTypes.string.isRequired
